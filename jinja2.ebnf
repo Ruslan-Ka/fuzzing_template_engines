@@ -1,0 +1,748 @@
+start
+    =
+    expression $
+    ;
+
+
+expressions
+    =
+    {expression}
+    ;
+
+
+expression
+    =
+    variable_expression
+    ;
+
+
+raw_block_expression
+    =
+    raw_block_start {!raw_block_end CHAR} raw_block_end
+    ;
+
+
+raw_block_start
+    =
+    block_open 'raw' {SP} block_close
+    ;
+
+
+raw_block_end
+    =
+    block_open 'endraw' {SP} block_close
+    ;
+
+
+block_expression
+    =
+    block_expression_pair | block_expression_single
+    ;
+
+
+block_expression_pair
+    =
+    block_start expressions block_end
+    ;
+
+
+block_expression_single
+    =
+    block_start
+    ;
+
+
+block_start
+    =
+    block_open
+    IDENTIFIER
+    ['(' variable_accessor_call_parameters ')']
+    [{SP}+ block_parameters]
+    {SP}
+    block_close
+    ;
+
+
+block_end
+    =
+    block_open  IDENTIFIER {SP} block_close
+    ;
+
+
+block_open
+    =
+    ({SP} block_open_symbol '-' {SP}) | block_open_symbol {SP}
+    ;
+
+
+block_open_symbol
+    =
+    '{%'
+    ;
+
+
+block_close
+    =
+    ('-' block_close_symbol {SP}) | block_close_symbol
+    ;
+
+
+block_close_symbol
+    =
+    '%}'
+    ;
+
+
+line_block_expression
+    =
+    line_block_expression_pair | line_block_expression_single
+    ;
+
+
+line_block_expression_pair
+    =
+    line_block_start expressions line_block_end
+    ;
+
+
+line_block_expression_single
+    =
+    line_block_start
+    ;
+
+
+line_block_start
+    =
+    line_block_open
+    IDENTIFIER
+    {!'\n' SP}
+    [line_block_parameters]
+    [{!'\n' SP} ':']
+    line_block_close
+    ;
+
+
+line_block_end
+    =
+    line_block_open  IDENTIFIER line_block_close
+    ;
+
+
+line_block_open
+    =
+    {!'\n' SP} line_block_open_symbol {!'\n' SP}
+    ;
+
+
+line_block_open_symbol
+    =
+    '#'
+    ;
+
+
+line_block_close
+    =
+    ({SP} $) | ({!'\n' SP} '\n')
+    ;
+
+
+line_block_parameters
+    =
+    block_parameter {{!'\n' SP}+ block_parameter}
+    ;
+
+
+block_parameters
+    =
+    block_parameter {block_parameter_separator block_parameter}
+    ;
+
+
+block_parameter_separator
+    =
+    ({SP} ',' {SP}) | ({SP}+)
+    ;
+
+
+block_parameter
+    =
+    block_parameter_key_value | block_parameter_value_only
+    ;
+
+
+block_parameter_key_value
+    =
+    block_parameter_key {SP} '=' {SP} variable_accessor_call_parameter_value
+    ;
+
+
+block_parameter_key
+    =
+    variable_accessor_call_parameter_key
+    ;
+
+
+block_parameter_value_only
+    =
+    | variable_identifier_with_alias
+    | variable_accessor_call_parameter_value
+    | conditional_expression
+    ;
+
+
+variable_expression
+    =
+    variable_open `'variable'` variable_expression_name variable_close
+    ;
+
+
+variable_open
+    =
+    ({SP} variable_open_symbol '-' {SP}) | (variable_open_symbol {SP})
+    ;
+
+
+variable_open_symbol
+    =
+    '{{'
+    ;
+
+
+variable_close
+    =
+    ({SP} '-' variable_close_symbol {SP}) | ({SP} variable_close_symbol)
+    ;
+
+
+variable_close_symbol
+    =
+    '}}'
+    ;
+
+
+variable_expression_name
+    =
+    conditional_expression
+    ;
+
+
+variable_identifier
+    =
+    variable_identifier_parentheses | variable_identifier_raw
+    ;
+
+
+variable_identifier_parentheses
+    =
+    '(' conditional_expression ')'
+    ;
+
+
+variable_identifier_raw
+    =
+    [('-' | '+')]
+    (LITERAL | IDENTIFIER)
+    {variable_accessor}
+    {{SP} variable_filter}
+    ;
+
+
+variable_identifier_with_alias
+    =
+    IDENTIFIER {SP} 'as' {SP} IDENTIFIER
+    ;
+
+
+variable_accessor
+    =
+    | variable_accessor_brackets
+    | variable_accessor_call
+    | variable_accessor_dot
+    ;
+
+
+variable_accessor_brackets
+    =
+    `'brackets'` '[' variable_identifier ']'
+    ;
+
+
+variable_accessor_call
+    =
+    `'call'` '(' [variable_accessor_call_parameters] ')'
+    ;
+
+
+variable_accessor_dot
+    =
+    `'dot'` '.' (IDENTIFIER | NUMBER_LITERAL)
+    ;
+
+
+variable_accessor_call_parameters
+    =
+    variable_accessor_call_parameter
+    {{SP} ',' {SP} variable_accessor_call_parameter}
+    ;
+
+
+variable_accessor_call_parameter
+    =
+    | variable_accessor_call_parameter_key_value
+    | variable_accessor_call_parameter_value_only
+    | variable_accessor_call_parameter_vararg
+    | variable_accessor_call_parameter_varkwarg
+    ;
+
+
+variable_accessor_call_parameter_vararg
+    =
+    '*' variable_identifier
+    ;
+
+
+variable_accessor_call_parameter_varkwarg
+    =
+    '**' variable_identifier
+    ;
+
+
+variable_accessor_call_parameter_key_value
+    =
+    variable_accessor_call_parameter_key
+    {SP}
+    '='
+    {SP}
+    variable_accessor_call_parameter_value
+    ;
+
+
+variable_accessor_call_parameter_value_only
+    =
+    variable_accessor_call_parameter_value
+    ;
+
+
+variable_accessor_call_parameter_key
+    =
+    IDENTIFIER
+    ;
+
+
+variable_accessor_call_parameter_value
+    =
+    conditional_expression
+    ;
+
+
+conditional_expression
+    =
+    | conditional_expression_not
+    | conditional_expression_if
+    | conditional_expression_logical
+    | conditional_expression_operator
+    | conditional_expression_test
+    | complex_expression
+    | variable_identifier
+    | conditional_expression_parentheses
+    ;
+
+
+complex_expression
+    =
+    | complex_expression_powers
+    | complex_expression_math2
+    | concatenate_expression
+    | complex_expression_math1
+    | complex_expression_parentheses
+    | variable_identifier
+    ;
+
+
+complex_expression_powers
+    =
+    variable_identifier {SP} '**' {SP} variable_identifier
+    ;
+
+
+complex_expression_math2
+    =
+    variable_identifier
+    {SP}
+    complex_expression_math2_operations
+    {SP}
+    variable_identifier
+    ;
+
+
+complex_expression_math2_operations
+    =
+    '*' | '/' | '//' | '%'
+    ;
+
+
+complex_expression_math1
+    =
+    variable_identifier
+    {SP}
+    complex_expression_math1_operations
+    {SP}
+    complex_expression
+    ;
+
+
+complex_expression_math1_operations
+    =
+    '+' | '-'
+    ;
+
+
+complex_expression_parentheses
+    =
+    '(' {SP} complex_expression {SP} ')'
+    ;
+
+
+conditional_expression_parentheses
+    =
+    '(' {SP} conditional_expression {SP} ')'
+    ;
+
+
+conditional_expression_not
+    =
+    'not' {SP}+ conditional_expression
+    ;
+
+
+conditional_expression_if
+    =
+    variable_identifier
+    {SP}
+    'if'
+    {SP}
+    conditional_expression
+    [{SP} 'else' {SP} conditional_expression]
+    ;
+
+
+conditional_expression_logical
+    =
+    conditional_expression
+    {SP}
+    variable_tests_logical_operator
+    {SP}
+    conditional_expression
+    ;
+
+
+conditional_expression_operator
+    =
+        conditional_expression_operator_in
+    |
+        (
+            complex_expression
+            {SP}
+            conditional_expression_operator_operations
+            {SP}
+            conditional_expression
+        )
+    ;
+
+
+conditional_expression_operator_in
+    =
+        ('not' variable_identifier {SP} `'notin'` 'in' {SP} variable_identifier)
+    |
+        (
+            variable_identifier
+            {SP}+
+            (('not' {SP} 'in' `'notin'`) | 'in')
+            {SP}+
+            variable_identifier
+        )
+    ;
+
+
+conditional_expression_test
+    =
+    variable_identifier
+    {SP}
+    'is'
+    [{SP}+ 'not' {SP} `True`]
+    {SP}
+    variable_identifier
+    [{SP}
+    !((variable_tests_logical_operator | 'is' | 'else') {SP})
+    variable_identifier]
+    ;
+
+
+conditional_expression_operator_operations
+    =
+    '==' | '!=' | '>' | '>=' | '<' | '<='
+    ;
+
+
+variable_tests_logical_operator
+    =
+    'and' | 'or'
+    ;
+
+
+concatenate_expression
+    =
+    variable_identifier {{SP} '~' {SP} variable_identifier}+
+    ;
+
+
+variable_filter
+    =
+    '|' {SP} filter
+    ;
+
+
+filter
+    =
+    IDENTIFIER {variable_accessor_call}
+    ;
+
+
+comment_expression
+    =
+    comment_open comment_content comment_close
+    ;
+
+
+comment_open
+    =
+    comment_open_symbol
+    ;
+
+
+comment_open_symbol
+    =
+    '{#'
+    ;
+
+
+comment_close
+    =
+    comment_close_symbol
+    ;
+
+
+comment_close_symbol
+    =
+    '#}'
+    ;
+
+
+comment_content
+    =
+    {!comment_close CHAR}
+    ;
+
+
+line_comment_expression
+    =
+    line_comment_open line_comment_content &'\n'
+    ;
+
+
+line_comment_open
+    =
+    {SP} line_comment_open_symbol
+    ;
+
+
+line_comment_open_symbol
+    =
+    '##'
+    ;
+
+
+line_comment_content
+    =
+    {!'\n' CHAR}
+    ;
+
+
+content
+    =
+    !(
+        | line_block_open
+        | block_open
+        | variable_open
+        | comment_open
+        | line_comment_open
+    )
+    CHAR
+    ;
+
+
+LITERAL
+    =
+    | NONE_LITERAL
+    | STRING_LITERAL
+    | NUMBER_LITERAL
+    | BOOLEAN_LITERAL
+    | DICTIONARY_LITERAL
+    | LIST_LITERAL
+    | EXPLICIT_TUPLE_LITERAL
+    ;
+
+
+DICTIONARY_LITERAL
+    =
+    `'dictionary'`
+    (
+            (
+                '{'
+                {SP}
+                dictionary_key_value
+                {{SP} ',' {SP} dictionary_key_value}
+                {SP}
+                '}'
+            )
+        |
+            ('{' {SP} '}')
+    )
+    ;
+
+
+dictionary_key_value
+    =
+    STRING_LITERAL {SP} ':' {SP} variable_identifier
+    ;
+
+
+LIST_LITERAL
+    =
+    `'list'`
+    (
+            (
+                '['
+                {SP}
+                variable_identifier
+                {SP}
+                {',' {SP} variable_identifier}
+                {SP}
+                ']'
+            )
+        |
+            ('[' {SP} ']')
+    )
+    ;
+
+
+TUPLE_LITERAL
+    =
+    EXPLICIT_TUPLE_LITERAL | IMPLICIT_TUPLE_LITERAL | EMPTY_TUPLE_LITERAL
+    ;
+
+
+EXPLICIT_TUPLE_LITERAL
+    =
+    `'tuple'` '(' TUPLE_LITERAL_CONTENTS ')'
+    ;
+
+
+IMPLICIT_TUPLE_LITERAL
+    =
+    `'tuple'` TUPLE_LITERAL_CONTENTS
+    ;
+
+
+TUPLE_LITERAL_CONTENTS
+    =
+    | (variable_identifier {SP} {',' {SP} variable_identifier {SP}}+)
+    | (variable_identifier {SP} ',' {SP})
+    ;
+
+
+EMPTY_TUPLE_LITERAL
+    =
+    `'tuple'` '(' {SP} ')'
+    ;
+
+
+INTEGER_LITERAL
+    =
+    /[\d_]*\d+/
+    ;
+
+
+SIGNED_INTEGER_LITERAL
+    =
+    /[+-]?[\d_]*\d+/
+    ;
+
+
+NUMBER_LITERAL
+    =
+    `'number'`
+    INTEGER_LITERAL
+    ['.' INTEGER_LITERAL]
+    [('e' | 'E') SIGNED_INTEGER_LITERAL]
+    ;
+
+
+STRING_LITERAL
+    =
+    STRING_LITERAL_SINGLE_QUOTE | STRING_LITERAL_DOUBLE_QUOTE
+    ;
+
+
+STRING_LITERAL_SINGLE_QUOTE
+    =
+    `'string'` "'" {!"'" /./} "'"
+    ;
+
+
+STRING_LITERAL_DOUBLE_QUOTE
+    =
+    `'string'` '"' {!'"' /./} '"'
+    ;
+
+
+BOOLEAN_LITERAL
+    =
+    `'boolean'` ((('true' | 'True') `True`) | (('false' | 'False') `False`))
+    ;
+
+
+NONE_LITERAL
+    =
+    `'none'` ('none' | 'None') `'None'`
+    ;
+
+
+IDENTIFIER
+    =
+ 'IDENTIFIER'
+    ;
+
+
+ALPHA
+    =
+    /[a-zA-Z]/
+    ;
+
+
+DIGIT
+    =
+    /[0-9]/
+    ;
+
+
+SP
+    =
+    /\s/
+    ;
+
+
+CHAR
+    =
+    /./ | /\s/
+    ;
